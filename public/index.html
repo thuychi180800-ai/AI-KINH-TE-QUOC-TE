@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LOGX – AI quản lý chuỗi cung ứng và kho bãi</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="ticker" aria-label="Bảng tin thời gian thực"><div id="tkTrack"></div></div>
+<div id="intro" role="presentation">
+  <canvas id="introC" role="presentation"></canvas>
+  <div id="introLogo"><span class="anc">⚓</span><span class="lg">LOGX</span></div>
+  <div id="introHint" hidden>Chạm bất kỳ đâu để bật âm thanh</div>
+  <button id="introSkip" aria-label="Bỏ qua đoạn mở đầu">Bỏ qua ✕</button>
+</div>
+<header>
+  <button id="backBtn" class="btn ghost" hidden>← Quay lại</button>
+  <span class="logo">⚓ LOGX</span>
+  <span class="sp"></span>
+  <span id="who"></span>
+  <button id="replayBtn" class="btn ghost">▶ Mở đầu</button>
+  <button id="keyBtn" class="btn ghost" hidden>Đổi API key</button>
+  <button id="outBtn" class="btn ghost" hidden>Đăng xuất</button>
+</header>
+
+<main>
+<!-- 1. API KEY -->
+<section id="v-key" class="view card narrow">
+  <h1>Kết nối trí tuệ nhân tạo</h1>
+  <p>Mỗi người dùng khóa API riêng từ Google AI Studio. Khóa chỉ lưu trong trình duyệt của bạn.</p>
+  <p><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Lấy khóa miễn phí tại AI Studio</a></p>
+  <label>API key</label>
+  <input id="keyIn" type="password" placeholder="AIza..." autocomplete="off">
+  <button id="loadModels" class="btn">Tải danh sách model</button>
+  <label>Model</label>
+  <select id="modelSel"><option value="">— Hãy tải danh sách model —</option></select>
+  <button id="testKey" class="btn gold">Kiểm tra và kết nối</button>
+  <p id="keyMsg" class="msg"></p>
+</section>
+
+<!-- 2. ĐĂNG NHẬP -->
+<section id="v-auth" class="view card narrow" hidden>
+  <h1 id="authTitle">Đăng nhập</h1>
+  <input id="aName" placeholder="Tên hiển thị" hidden>
+  <input id="aMail" type="email" placeholder="Email" autocomplete="email">
+  <input id="aPass" type="password" placeholder="Mật khẩu (từ 6 ký tự)" autocomplete="current-password">
+  <button id="aGo" class="btn gold">Đăng nhập</button>
+  <button id="aSwap" class="btn ghost">Chưa có tài khoản? Đăng ký</button>
+  <p id="authMsg" class="msg"></p>
+</section>
+
+<!-- 3. TRANG CHỦ -->
+<section id="v-home" class="view" hidden>
+  <h1>Chọn chức năng</h1>
+  <div class="grid">
+    <button class="tile" data-go="chat"><b>Trợ lý AI</b><span>Hỏi đáp logistics, tìm kiếm thông tin mới, nói chuyện bằng micro</span></button>
+    <button class="tile" data-go="ocr"><b>Quét chứng từ</b><span>Chụp hoặc gửi ảnh/PDF, tự nhận diện nội dung (OCR)</span></button>
+    <button class="tile" data-go="forum"><b>Diễn đàn</b><span>Trao đổi trực tiếp, xem ai đang trực tuyến</span></button>
+    <button class="tile" data-go="pack"><b>3D Container Optimizer</b><span>Xếp hàng vào container bằng Extreme Points, xem 3D, CoG, rủi ro hư hại</span></button>
+    <button class="tile" id="tileVoice"><b>Trò chuyện giọng nói</b><span>Nói chuyện với LOGX theo thời gian thật, ngắt lời bất cứ lúc nào</span></button>
+    <button class="tile" data-go="wh"><b>Kho · Tồn kho · 3-Way Match</b><span>Safety Stock, ROP, đối soát PO–Invoice–PL, bản đồ dung tích bin</span></button>
+    <button class="tile" data-go="legal"><b>Luật & Hiệp ước · Báo cáo PDF</b><span>EVFTA, CPTPP, RCEP, CBAM, EUDR, GACC; chẩn đoán rủi ro hải quan</span></button>
+    <button class="tile" data-go="ship"><b>Phân tích lô hàng 2.1</b><span>Mã HS, rủi ro, bảo hiểm CIF×110%, dự đoán thông quan</span></button>
+  </div>
+</section>
+
+<!-- 4. CHAT -->
+<section id="v-chat" class="view" hidden>
+  <h1>Trợ lý LOGX</h1>
+  <div id="log" class="log"></div>
+  <div class="chips">
+    <button class="chip">Incoterms DAP khác DDP thế nào?</button>
+    <button class="chip">Điều kiện hưởng ưu đãi EVFTA?</button>
+    <button class="chip">ISPM 15 là gì?</button>
+  </div>
+  <div class="bar">
+    <textarea id="chatIn" rows="2" placeholder="Nhập câu hỏi logistics (Enter để gửi)…"></textarea>
+    <button id="micBtn" class="btn">🎤 Bật micro</button>
+    <button id="sendBtn" class="btn gold">Gửi</button>
+  </div>
+  <div class="opts">
+    <label><input type="checkbox" id="optSpeak" checked> Đọc to câu trả lời</label>
+    <label><input type="checkbox" id="optAuto" checked> Tự gửi khi nói xong câu</label>
+    <button id="stopSpeak" class="btn ghost">⏹ Dừng đọc</button>
+    <button id="clearChat" class="btn ghost">Xóa hội thoại</button>
+  </div>
+  <p id="micMsg" class="msg"></p>
+</section>
+
+<!-- 5. OCR -->
+<section id="v-ocr" class="view" hidden>
+  <h1>Quét chứng từ (OCR)</h1>
+  <p>Hỗ trợ Invoice, Packing List, B/L, tờ khai… ở dạng ảnh hoặc PDF.</p>
+  <div class="bar">
+    <label class="btn gold">📷 Chụp ảnh<input id="ocrCam" type="file" accept="image/*" capture="environment" hidden></label>
+    <label class="btn">📁 Chọn ảnh / PDF<input id="ocrFile" type="file" accept="image/*,application/pdf" hidden></label>
+  </div>
+  <img id="ocrImg" class="prev" alt="" hidden>
+  <div id="ocrOut" class="card out" hidden></div>
+  <button id="ocrAsk" class="btn" hidden>Hỏi trợ lý về chứng từ này</button>
+  <button id="ocrDeep" class="btn gold" hidden>Phân tích sâu lô hàng (2.1)</button>
+</section>
+
+<!-- 6. DIỄN ĐÀN -->
+<section id="v-forum" class="view" hidden>
+  <h1>Diễn đàn LOGX</h1>
+  <p id="online" class="msg"></p>
+  <textarea id="postIn" rows="3" maxlength="2000" placeholder="Chia sẻ kinh nghiệm, đặt câu hỏi cho mọi người…"></textarea>
+  <button id="postBtn" class="btn gold">Đăng bài</button>
+  <div id="posts"></div>
+</section>
+<!-- 7. 3D CONTAINER -->
+<section id="v-pack" class="view" hidden>
+  <h1>3D Container Optimizer</h1>
+  <div class="bar">
+    <div><label>Loại container</label><select id="pCt"><option>20DC</option><option>40DC</option><option selected>40HC</option></select></div>
+    <div><label>Chiến lược</label><select id="pSt"><option value="vol">Tối ưu thể tích</option><option value="bal">Cân bằng tải trọng</option><option value="heavy">Hàng nặng ở dưới</option></select></div>
+  </div>
+  <label>Danh sách hàng (mỗi dòng: tên; dài cm; rộng cm; cao cm; kg/kiện; số lượng; dễ vỡ 1/0)</label>
+  <textarea id="pItems" rows="6"></textarea>
+  <button id="pDemo" class="btn">Nạp dữ liệu demo</button>
+  <button id="pRun" class="btn gold">Tính toán xếp hàng</button>
+  <div id="pOut" class="msg"></div>
+  <div id="pView"></div>
+  <div class="opts">
+    <button class="btn ghost" data-view="p">Phối cảnh</button><button class="btn ghost" data-view="t">Từ trên</button>
+    <button class="btn ghost" data-view="s">Cạnh bên</button><button class="btn ghost" data-view="d">Phía cửa</button>
+    <button id="pPlay" class="btn">▶ Phát từng bước</button>
+    <input id="pStep" type="range" min="0" max="0" value="0" style="flex:1;min-width:160px">
+  </div>
+  <div id="pStats"></div>
+  <button id="pAsk" class="btn" hidden>Nhờ trợ lý tư vấn phương án này</button>
+  <div id="pPlan" class="out card" hidden></div>
+</section>
+<!-- 8. PHÂN TÍCH LÔ HÀNG 2.1 -->
+<section id="v-ship" class="view" hidden>
+  <h1>Phân tích lô hàng (2.1)</h1>
+  <p>Dán nội dung chứng từ (hoặc dùng kết quả OCR). AI trích xuất dòng hàng, gợi ý mã HS, phân loại rủi ro, tính bảo hiểm và dự đoán.</p>
+  <textarea id="shIn" rows="7" placeholder="Nội dung Invoice / Packing List / B/L…"></textarea>
+  <button id="shDemo" class="btn">Nạp dữ liệu demo</button>
+  <button id="shRun" class="btn gold">Phân tích</button>
+  <div id="shOut"></div>
+</section>
+<!-- 9. KHO -->
+<section id="v-wh" class="view" hidden>
+  <h1>Kho · Tồn kho an toàn · Đối soát 3 bên</h1>
+  <h2>Safety Stock và ROP</h2>
+  <p>Mỗi dòng: SKU; tồn khả dụng; nhu cầu TB/ngày; σ nhu cầu; lead time TB (ngày); σ lead time</p>
+  <textarea id="whIn" rows="5"></textarea>
+  <div class="bar"><div><label>Mức phục vụ (Z)</label><select id="whZ"><option value="1.28">90% (1,28)</option><option value="1.645" selected>95% (1,645)</option><option value="1.96">97,5% (1,96)</option><option value="2.33">99% (2,33)</option></select></div></div>
+  <button id="whRun" class="btn gold">Tính SS / ROP</button>
+  <div id="whOut"></div>
+  <h2>Đối soát 3 bên (PO – Invoice – Packing List)</h2>
+  <p>Mỗi dòng: SKU; SL PO; SL Invoice; SL PL; kg PO; kg Invoice; kg PL. Cảnh báo khi lệch trọng lượng &gt; 2%.</p>
+  <textarea id="twIn" rows="5"></textarea>
+  <button id="twRun" class="btn gold">Đối soát</button>
+  <div id="twOut"></div>
+  <h2>Bản đồ dung tích bin</h2>
+  <p>Xanh dưới 80% · Vàng 80–90% · Đỏ trên 90%. Bấm vào bin để xem chi tiết.</p>
+  <div id="bins" class="bins"></div><p id="binInfo" class="msg"></p>
+</section>
+<!-- 10. LUẬT -->
+<section id="v-legal" class="view" hidden>
+  <h1>Luật và Hiệp ước thương mại</h1>
+  <p class="msg">Thông tin tham khảo, kiểm tra văn bản gốc trước khi áp dụng.</p>
+  <div id="lgCards"></div>
+  <h2>Chẩn đoán rủi ro hải quan</h2>
+  <div class="bar">
+    <div><label>Chiều</label><select id="lgDir"><option>Xuất khẩu</option><option>Nhập khẩu</option></select></div>
+    <div><label>Ngành hàng</label><select id="lgInd"><option>Giày dép</option><option>Điện tử</option><option>Nông sản</option><option>Thép/Nhôm</option><option>Cà phê/Cao su</option><option>Gỗ</option><option>Dệt may</option></select></div>
+    <div><label>Thị trường</label><select id="lgMk"><option>EU</option><option>Hoa Kỳ</option><option>Trung Quốc</option><option>Nhật Bản</option><option>Hàn Quốc</option><option>ASEAN</option><option>Úc</option></select></div>
+  </div>
+  <button id="lgRun" class="btn gold">Chẩn đoán</button>
+  <div id="lgOut"></div>
+</section>
+</main>
+<div id="vdock">
+  <div id="vSub" hidden></div>
+  <label class="vw"><input type="checkbox" id="vLive"> Gemini Live (nói trực tiếp, thử nghiệm)</label>
+  <label class="vw"><input type="checkbox" id="vWake" checked> Wake word “Xin chào LOGX”</label>
+  <div class="vrow"><span id="vState">Voice tắt</span>
+    <button id="vBtn" aria-label="Bật hoặc tắt Voice LOGX" title="Bật/tắt trò chuyện bằng giọng nói"><span id="vAnc">⚓</span></button></div>
+</div>
+<div id="pdfModal" hidden><div class="bar" style="justify-content:center"><button id="pdfDl" class="btn gold">Tải PDF</button><button id="pdfClose" class="btn">Đóng</button></div><div id="pdfPage" class="rp"></div></div>
+<div id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/app.js"></script>
+<script src="js/pack.js"></script>
+<script src="js/intro.js"></script>
+<script src="js/ticker.js"></script>
+<script src="js/voice.js"></script>
+<script src="js/live.js"></script>
+<script src="js/modules.js"></script>
+</body>
+</html>
